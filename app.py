@@ -1,9 +1,11 @@
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import tensorflow as tf
 import numpy as np
 from PIL import Image
 import torch
+import os
 from swin_transformer_model import SwinTransformerPredictor
 
 app = Flask(__name__)
@@ -140,4 +142,4 @@ def get_models():
 
 if __name__ == "__main__":
 
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
