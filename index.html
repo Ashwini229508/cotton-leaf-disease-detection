@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cotton Disease Detection</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Segoe UI;
+}
+
+body{
+background:linear-gradient(135deg,#667eea,#764ba2);
+min-height:100vh;
+display:flex;
+justify-content:center;
+padding:40px;
+color:white;
+}
+
+.container{
+width:1000px;
+}
+
+/* Upload Card */
+
+.upload-card{
+background:rgba(255,255,255,0.12);
+backdrop-filter:blur(10px);
+padding:40px;
+border-radius:20px;
+text-align:center;
+box-shadow:0 20px 40px rgba(0,0,0,0.3);
+}
+
+.upload-box{
+margin-top:20px;
+border:2px dashed rgba(255,255,255,0.5);
+padding:60px;
+border-radius:15px;
+cursor:pointer;
+}
+
+.upload-box:hover{
+background:rgba(255,255,255,0.08);
+}
+
+button{
+margin-top:25px;
+padding:12px 30px;
+border:none;
+border-radius:25px;
+background:white;
+color:#333;
+font-size:16px;
+cursor:pointer;
+}
+
+button:hover{
+transform:scale(1.05);
+}
+
+input{
+display:none;
+}
+
+.preview img{
+max-width:150px;
+margin-top:15px;
+border-radius:10px;
+display:none;
+}
+
+/* Ensemble Prediction */
+
+.ensemble{
+margin-top:30px;
+background:rgba(255,255,255,0.15);
+padding:30px;
+border-radius:20px;
+text-align:center;
+}
+
+.ensemble h2{
+font-size:40px;
+margin:10px 0;
+}
+
+/* Model Cards */
+
+.models{
+display:flex;
+gap:20px;
+margin-top:25px;
+}
+
+.card{
+background:white;
+color:black;
+flex:1;
+padding:25px;
+border-radius:15px;
+}
+
+.model-title{
+font-weight:bold;
+margin-bottom:10px;
+}
+
+.progress{
+height:8px;
+background:#eee;
+border-radius:5px;
+margin:10px 0;
+overflow:hidden;
+}
+
+.fill{
+height:8px;
+background:#28a745;
+}
+
+.prob{
+font-size:14px;
+display:flex;
+justify-content:space-between;
+margin-top:4px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="upload-card">
+
+<h1>⚙ Ensemble Prediction</h1>
+<p>Upload a cotton leaf image to detect disease using dual AI models</p>
+
+<div class="upload-box" onclick="document.getElementById('fileInput').click()">
+
+<div style="font-size:40px">🌿</div>
+<p>Click or drag to upload a leaf image</p>
+
+<input type="file" id="fileInput" accept="image/*" onchange="previewImage()">
+
+</div>
+
+<div class="preview">
+<img id="preview">
+</div>
+
+<button onclick="uploadImage()">🔍 Analyze Image</button>
+
+</div>
+
+<div id="result"></div>
+
+</div>
+
+<script>
+
+let selectedFile=null
+
+function previewImage(){
+
+const input=document.getElementById("fileInput")
+const preview=document.getElementById("preview")
+
+selectedFile=input.files[0]
+
+if(selectedFile){
+preview.src=URL.createObjectURL(selectedFile)
+preview.style.display="block"
+}
+
+}
+
+function uploadImage(){
+
+if(!selectedFile){
+alert("Select image first")
+return
+}
+
+const formData=new FormData()
+formData.append("file",selectedFile)
+
+fetch("http://127.0.0.1:5000/analyze",{
+method:"POST",
+body:formData
+})
+
+.then(res=>res.json())
+
+.then(data=>{
+displayResult(data)
+})
+
+.catch(err=>{
+alert("Flask server not running")
+})
+
+}
+
+function displayResult(data){
+
+let html=""
+
+html+=`
+
+<div class="ensemble">
+
+<div>ENSEMBLE PREDICTION</div>
+
+<h2>${data.ensemble_prediction}</h2>
+
+<p>Confidence: ${data.ensemble_confidence}%</p>
+
+</div>
+
+<div class="models">
+
+${createModelCard("EfficientNet",data.efficientnet)}
+
+${createModelCard("Swin Transformer",data.swin_transformer)}
+
+</div>
+
+`
+
+document.getElementById("result").innerHTML=html
+
+}
+
+function createModelCard(name,data){
+
+let probs=""
+
+for(let key in data.probabilities){
+
+probs+=`
+
+<div class="prob">
+<span>${key}</span>
+<span>${data.probabilities[key].toFixed(2)}%</span>
+</div>
+
+`
+
+}
+
+return`
+
+<div class="card">
+
+<div class="model-title">${name}</div>
+
+<h3>${data.prediction}</h3>
+
+<p>Confidence: ${data.confidence}%</p>
+
+<div class="progress">
+
+<div class="fill" style="width:${data.confidence}%"></div>
+
+</div>
+
+<div style="margin-top:15px;font-weight:bold">CLASS PROBABILITIES</div>
+
+${probs}
+
+</div>
+
+`
+
+}
+
+</script>
+
+</body>
+</html>
